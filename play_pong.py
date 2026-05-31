@@ -92,7 +92,8 @@ def main():
     if not os.path.exists(args.jepa_path):
         raise FileNotFoundError(f"Checkpoint not found at {args.jepa_path}. Please train the JEPA model first!")
     
-    checkpoint = torch.load(args.jepa_path, map_location=device)
+    checkpoint = torch.load(args.jepa_path, map_location=device, weights_only=False)
+
     
     # We instantiate a model, load weights, and extract encoder
     jepa_model = JEPAWorldModel(in_channels=4, latent_dim=256, action_dim=6).to(device)

@@ -1,7 +1,9 @@
 import cv2
 import numpy as np
+import ale_py
 import gymnasium as gym
 from gymnasium import spaces
+
 
 class NoopResetEnv(gym.Wrapper):
     def __init__(self, env, noop_max=30):

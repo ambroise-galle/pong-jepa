@@ -136,14 +136,16 @@ def play_agent(env_id, jepa_path, dqn_path, device="cpu", episodes=5):
     env = make_pong(env_id=env_id, render_mode="human")
     
     # Load model checkpoints
-    jepa_checkpoint = torch.load(jepa_path, map_location=device)
+    jepa_checkpoint = torch.load(jepa_path, map_location=device, weights_only=False)
+
     jepa_model = JEPAWorldModel(in_channels=4, latent_dim=256, action_dim=6).to(device)
     jepa_model.load_state_dict(jepa_checkpoint["model_state_dict"])
     encoder = jepa_model.online_encoder
     encoder.eval()
     
     dqn = QNetwork(latent_dim=256, action_dim=6).to(device)
-    dqn.load_state_dict(torch.load(dqn_path, map_location=device))
+    dqn.load_state_dict(torch.load(dqn_path, map_location=device, weights_only=False))
+
     dqn.eval()
     
     for ep in range(episodes):
@@ -191,7 +193,8 @@ def main():
     if not os.path.exists(args.jepa_path):
         raise FileNotFoundError(f"Checkpoint {args.jepa_path} not found.")
         
-    checkpoint = torch.load(args.jepa_path, map_location=device)
+    checkpoint = torch.load(args.jepa_path, map_location=device, weights_only=False)
+
     model = JEPAWorldModel(in_channels=4, latent_dim=256, action_dim=6).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
     
