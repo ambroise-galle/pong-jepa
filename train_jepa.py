@@ -20,7 +20,8 @@ def main():
     parser.add_argument("--log_dir", type=str, default="logs/jepa", help="Directory for TensorBoard logs")
     parser.add_argument("--device", type=str, default="auto", help="Device to train on (auto, cuda, mps, cpu)")
     parser.add_argument("--use_wandb", action="store_true", help="Log metrics to Weights & Biases")
-    parser.add_argument("--project_name", type=str, default="jepa-pong", help="Wandb project name")
+    parser.add_argument("--project_name", type=str, default="pong-jepa", help="Wandb project name")
+
     args = parser.parse_args()
 
     # Determine training device

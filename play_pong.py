@@ -61,7 +61,8 @@ def main():
     parser.add_argument("--device", type=str, default="auto", help="Device to run training on")
     parser.add_argument("--render", action="store_true", help="Render environment during training")
     parser.add_argument("--use_wandb", action="store_true", help="Log metrics to Weights & Biases")
-    parser.add_argument("--project_name", type=str, default="jepa-pong-rl", help="Wandb project name")
+    parser.add_argument("--project_name", type=str, default="pong-jepa", help="Wandb project name")
+
     args = parser.parse_args()
 
     # Initialize wandb
