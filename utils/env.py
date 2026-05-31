@@ -177,6 +177,26 @@ class PongRewardShaping(gym.Wrapper):
             
         return obs, reward, terminated, truncated, info
 
+class RestrictActions(gym.Wrapper):
+    """
+    Wrapper to restrict discrete actions in Pong from 6 to 3 core actions:
+    0: NOOP (Stay still, maps to raw Pong action 0)
+    1: UP (moves paddle UP, maps to raw Pong action 2)
+    2: DOWN (moves paddle DOWN, maps to raw Pong action 3)
+    """
+    def __init__(self, env):
+        super().__init__(env)
+        self.action_space = spaces.Discrete(3)
+        self.action_mapping = {
+            0: 0,  # NOOP
+            1: 2,  # UP
+            2: 3   # DOWN
+        }
+
+    def step(self, action):
+        raw_action = self.action_mapping[int(action)]
+        return self.env.step(raw_action)
+
 def make_pong(env_id="PongNoFrameskip-v4", render_mode=None, width=64, height=64, k=4, reward_shaping=False):
     env = gym.make(env_id, render_mode=render_mode)
     # Apply standard Atari wrappers
@@ -187,7 +207,9 @@ def make_pong(env_id="PongNoFrameskip-v4", render_mode=None, width=64, height=64
     env = ProcessFrame(env, width=width, height=height)
     env = ImageToPyTorch(env)
     env = FrameStack(env, k=k)
+    env = RestrictActions(env)
     if reward_shaping:
         env = PongRewardShaping(env)
     return env
+
 

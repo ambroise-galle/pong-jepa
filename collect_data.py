@@ -11,7 +11,7 @@ def get_heuristic_action(state, epsilon=0.15):
     Input state: numpy array of shape (4, 64, 64) with uint8 values in [0, 255].
     """
     if np.random.rand() < epsilon:
-        return np.random.choice([0, 2, 3])  # NOOP, UP, DOWN are the core actions in Pong
+        return np.random.choice([0, 1, 2])  # NOOP, UP, DOWN in the restricted 3-action space
 
     # Use the most recent frame in the stack (index -1)
     frame = state[-1]
@@ -40,15 +40,16 @@ def get_heuristic_action(state, epsilon=0.15):
 
     # Heuristic control rule
     if ball_y is None or paddle_y is None:
-        return np.random.choice([0, 2, 3])  # NOOP/UP/DOWN randomly if objects are not found
+        return np.random.choice([0, 1, 2])  # NOOP/UP/DOWN randomly if objects are not found
     
-    # Paddle controls: 2 is UP, 3 is DOWN, 0/1 are NOOP/FIRE
+    # Restricted controls: 1 is UP, 2 is DOWN, 0 is NOOP
     if ball_y < paddle_y - 2:
-        return 2  # Move paddle UP
+        return 1  # Move paddle UP (raw 2)
     elif ball_y > paddle_y + 2:
-        return 3  # Move paddle DOWN
+        return 2  # Move paddle DOWN (raw 3)
     else:
         return 0  # Stay (NOOP)
+
 
 def main():
     parser = argparse.ArgumentParser(description="Collect Pong transitions for JEPA pre-training")

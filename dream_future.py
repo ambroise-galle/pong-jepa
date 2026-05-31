@@ -79,7 +79,8 @@ def main():
 
     # Load JEPA World Model
     jepa_checkpoint = torch.load(args.jepa_path, map_location=device, weights_only=False)
-    jepa_model = JEPAWorldModel(in_channels=4, latent_dim=256, action_dim=6).to(device)
+    jepa_action_dim = jepa_checkpoint["model_state_dict"]["predictor.action_embed.weight"].shape[0]
+    jepa_model = JEPAWorldModel(in_channels=4, latent_dim=256, action_dim=jepa_action_dim).to(device)
     jepa_model.load_state_dict(jepa_checkpoint["model_state_dict"])
     encoder = jepa_model.online_encoder
     predictor = jepa_model.predictor
@@ -95,8 +96,10 @@ def main():
     decoder.eval()
 
     # Load DQN Policy Q-Network
-    q_net = QNetwork(latent_dim=256, action_dim=6).to(device)
-    q_net.load_state_dict(torch.load(args.policy_path, map_location=device, weights_only=False))
+    policy_state_dict = torch.load(args.policy_path, map_location=device, weights_only=False)
+    policy_action_dim = policy_state_dict["net.4.weight"].shape[0] if "net.4.weight" in policy_state_dict else 6
+    q_net = QNetwork(latent_dim=256, action_dim=policy_action_dim).to(device)
+    q_net.load_state_dict(policy_state_dict)
     q_net.eval()
 
     print("All models successfully loaded and set to eval.")
@@ -104,7 +107,16 @@ def main():
     # 2. Setup Environment
     print(f"Creating environment: {args.env_id}")
     env = make_pong(env_id=args.env_id)
-    action_meanings = env.unwrapped.get_action_meanings()
+    
+    # Resolve action names based on action space dimension
+    if env.action_space.n == 3:
+        action_names = {0: "NOOP", 1: "UP", 2: "DOWN"}
+    else:
+        try:
+            raw_meanings = env.unwrapped.get_action_meanings()
+            action_names = {i: raw_meanings[i] for i in range(len(raw_meanings))}
+        except Exception:
+            action_names = {i: f"ACTION_{i}" for i in range(env.action_space.n)}
 
     obs, _ = env.reset()
     done = False
@@ -141,7 +153,7 @@ def main():
         with torch.no_grad():
             q_values = q_net(z_t)
             action = q_values.argmax(dim=-1).item()
-            action_name = action_meanings[action]
+            action_name = action_names.get(action, f"ACT_{action}")
             
         # Step environment (Real Ground Truth path)
         next_obs, true_reward, terminated, truncated, _ = env.step(action)
