@@ -62,6 +62,8 @@ def main():
     parser.add_argument("--render", action="store_true", help="Render environment during training")
     parser.add_argument("--use_wandb", action="store_true", help="Log metrics to Weights & Biases")
     parser.add_argument("--project_name", type=str, default="pong-jepa", help="Wandb project name")
+    parser.add_argument("--reward_shaping", action="store_true", help="Use dense reward shaping (+0.2 on paddle ball hit)")
+
 
     args = parser.parse_args()
 
@@ -111,7 +113,7 @@ def main():
     # 2. Setup Gymnasium environment
     print(f"Creating environment: {args.env_id}")
     render_mode = "human" if args.render else None
-    env = make_pong(env_id=args.env_id, render_mode=render_mode)
+    env = make_pong(env_id=args.env_id, render_mode=render_mode, reward_shaping=args.reward_shaping)
     action_dim = env.action_space.n
 
     # 3. Initialize DQN policy networks

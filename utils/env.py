@@ -118,7 +118,66 @@ class FrameStack(gym.Wrapper):
     def _get_ob(self):
         return np.concatenate(self.frames, axis=0)
 
-def make_pong(env_id="PongNoFrameskip-v4", render_mode=None, width=64, height=64, k=4):
+class PongRewardShaping(gym.Wrapper):
+    """
+    Custom wrapper that shapes the rewards in Atari Pong by awarding a dense reward
+    of +0.2 whenever the player (right paddle) successfully hits/returns the ball.
+    This helps the reinforcement learning agent learn the physics of contact very quickly
+    rather than relying on extremely sparse game scoring events.
+    """
+    def __init__(self, env):
+        super().__init__(env)
+        self.prev_ball_x = None
+        self.prev_ball_y = None
+        self.ball_moving_right = True
+        
+    def reset(self, **kwargs):
+        obs, info = self.env.reset(**kwargs)
+        self.prev_ball_x = None
+        self.prev_ball_y = None
+        self.ball_moving_right = True
+        return obs, info
+        
+    def step(self, action):
+        obs, reward, terminated, truncated, info = self.env.step(action)
+        
+        # Extract current frame (last channel of frame stack)
+        frame = obs[-1]
+        
+        # 1. Locate ball (cols 8 to 55, y cols 10 to 60)
+        ball_y_idxs, ball_x_idxs = np.where(frame[10:60, 8:55] > 140)
+        if len(ball_x_idxs) > 0:
+            ball_x = ball_x_idxs.mean() + 8
+            ball_y = ball_y_idxs.mean() + 10
+            
+            # Track direction changes
+            if self.prev_ball_x is not None:
+                if ball_x > self.prev_ball_x:
+                    self.ball_moving_right = True
+                elif ball_x < self.prev_ball_x:
+                    # Reversal of direction: ball is now moving left.
+                    # Was it moving right and close to the player paddle?
+                    if self.ball_moving_right and self.prev_ball_x >= 51:
+                        # Locate player paddle (cols 56 to 59, y cols 10 to 60)
+                        paddle_y_idxs, _ = np.where(frame[10:60, 56:59] > 100)
+                        if len(paddle_y_idxs) > 0:
+                            paddle_y = paddle_y_idxs.mean() + 10
+                            # Check vertical overlap
+                            if abs(ball_y - paddle_y) <= 6:
+                                reward += 0.2
+                                print(f"--> [Reward Shaping] Successfully hit the ball! Awarded +0.2 (ball_x: {ball_x:.1f}, paddle_y: {paddle_y:.1f})")
+                                
+                    self.ball_moving_right = False
+                    
+            self.prev_ball_x = ball_x
+            self.prev_ball_y = ball_y
+        else:
+            self.prev_ball_x = None
+            self.prev_ball_y = None
+            
+        return obs, reward, terminated, truncated, info
+
+def make_pong(env_id="PongNoFrameskip-v4", render_mode=None, width=64, height=64, k=4, reward_shaping=False):
     env = gym.make(env_id, render_mode=render_mode)
     # Apply standard Atari wrappers
     env = NoopResetEnv(env, noop_max=30)
@@ -128,4 +187,7 @@ def make_pong(env_id="PongNoFrameskip-v4", render_mode=None, width=64, height=64
     env = ProcessFrame(env, width=width, height=height)
     env = ImageToPyTorch(env)
     env = FrameStack(env, k=k)
+    if reward_shaping:
+        env = PongRewardShaping(env)
     return env
+
