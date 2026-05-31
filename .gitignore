@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints
+
+# Environment/Data/Models (we want to keep the repo lightweight)
+data/
+checkpoints/
+logs/
+
+# Operating System
+.DS_Store
+Thumbs.db
